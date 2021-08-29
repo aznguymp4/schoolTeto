@@ -109,7 +109,7 @@ for (let i = 1; i <= 9; i++) {
         function respond(e) {
             var k = e.code
             ctrlDat[i-1] = k
-            b.innerHTML = k.length==1?k.toUpperCase():k
+            b.innerHTML = k
             saveToCookie()
             document.removeEventListener('keydown', respond)
         }
