@@ -12,7 +12,7 @@ Controls settings are saved via browser cookies.
 
 Didn't bother to add it since it's a school project.
 
-## Score System? Lock Delay? Music?
+## Score System? Lock Delay? Music? Top Out Detection?
 
 Same reason as above ![](https://i.imgur.com/a69uWP7.png)
 
