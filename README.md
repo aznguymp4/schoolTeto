@@ -10,7 +10,7 @@ Controls settings are saved via browser cookies.
 
 ## Where is the T-Spin detection?
 
-Didn't bother to add it since it's a school project.
+Didn't bother to add it since it's a school project....... play **[Tetroblox](https://www.roblox.com/games/6795867689/)** instead!!!!11!1!11
 
 ## Score System? Lock Delay? Music? Top Out Detection?
 
