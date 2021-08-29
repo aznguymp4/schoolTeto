@@ -1,0 +1,447 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<style>
+    @font-face { font-family: Muro; src: url('Muroslant.otf'); } 
+    .queue{
+        float: left;
+        text-align: center;
+        font-family: Muro;
+        font-size: 28px;
+        letter-spacing: 2px;
+    }
+    canvas{
+        vertical-align: top;
+    }
+</style>
+<head>
+    <title>Tetris Thing</title>
+</head>
+<body style="background-color:#222; color: #FFF;">
+    <div style="top: 50%; left: 50%; position: fixed; transform: translate(-50%, -50%);">
+        <div class="queue">
+            HOLD
+            <hr>
+            <canvas id="h" width="90" height="60"></canvas>
+            <div id="notif" style="width: 90px; text-align: center;"></div>
+        </div>
+        <canvas id="b" width="200" height="400" style="float: left; padding: 18px;"></canvas>
+        <div class="queue">
+            NEXT
+            <hr>
+            <canvas id="n" width="90" height="360"></canvas>
+        </div>
+    </div>
+    <div style="top: 99%; left: 50%; position: fixed; transform: translate(-50%, -100%);">
+        <button href="controls.html" target="popup" onclick="ctrlsPopup()">Change controls</button>
+    </div>
+</body>
+<script>
+function setCookie(e,t,n){const o=new Date;o.setTime(o.getTime()+24*n*60*60*1e3);let i="expires="+o.toUTCString();document.cookie=e+"="+t+";"+i+";path=/"}function getCookie(e){let t=e+"=",n=decodeURIComponent(document.cookie).split(";");for(let e=0;e<n.length;e++){let o=n[e];for(;" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}
+const print = console.log
+
+function ctrlsPopup() {
+    var p = window.open('controls.html','popup','width=1200,height=800')
+    setInterval(() => {// event onbeforeunload wont work and idk why so i gotta use this
+        if(p.closed) location.reload()
+    }, 100);
+}
+
+Array.prototype.getRand = function() {
+    return this[Math.floor(Math.random()*this.length)]
+}
+Array.prototype.shuffle = function() {
+    return this.sort(()=>Math.random()-.5)
+}
+var ctrl = {
+    "ArrowLeft": "L",
+    "ArrowRight": "R",
+    "ArrowDown": "SD",
+    " ": "HD",
+    "Shift": "HL",
+    "z": "CW",
+    "x": "CCW",
+    "c": "R180",
+    "r": "RE"
+}
+const color = {
+    Z: "#F00",
+    L: "#F80",
+    O: "#FF0",
+    S: "#0F0",
+    I: "#0BF",
+    J: "#05F",
+    T: "#C3F"
+}
+var imgs = {
+    grid: 'grid.png',
+    Z: '/pieceSprite/z.png',
+    L: '/pieceSprite/l.png',
+    O: '/pieceSprite/o.png',
+    S: '/pieceSprite/s.png',
+    I: '/pieceSprite/i.png',
+    J: '/pieceSprite/j.png',
+    T: '/pieceSprite/t.png'
+}
+const notf = $('#notif')
+const names = ["Z","L","O","S","I","J","T"]
+const spawn = [3,18]
+const a = {t:0,c:""} // t:0 = nothing   t:1 = heap mino   t:2 = current mino   t:3 = ghost mino
+const rotDir = {
+    CW: 1,
+    CCW: 3,
+    R180: 2
+}
+var DAS = 160
+var ARR = 30
+var SDR = 15
+var charging = false
+var board = []; for (let i = 0; i < 40; i++) {board.push([a,a,a,a,a,a,a,a,a,a])}
+var queue = []
+var piece = ""
+var holdP = ""
+var held = false
+var Ldn = Rdn = false
+var rot = 0
+var dasID = 0
+var sdINT = dasINT = null
+var xPOS = spawn[0]
+var yPOS = spawn[1]
+var xGHO = spawn[0]
+var yGHO = spawn[1]
+var c  = document.getElementById("b")
+var cH = document.getElementById("h")
+var cN = document.getElementById("n")
+var ctx  = c.getContext("2d")
+var ctxH = cH.getContext("2d")
+var ctxN = cN.getContext("2d")
+/* ctxN.fillStyle = '#333'
+ctxH.fillStyle = '#333' */
+
+var cookie = getCookie('controls')//'a-=-d-=-s-=-w-=-[-=-SemiColon-=-l-=- -=-p'
+if(cookie) { // Load saved controls from cookies
+    var ctrls = cookie.replace(/SemiColon/g,';').split('-=-')
+    var codes = Object.values(ctrl)
+    ctrl = {}
+    for (let i = 0; i < 9; i++) {
+        ctrl[ctrls[i]] = codes[i]
+    }
+    DAS = parseInt(ctrls[9])
+    ARR = parseInt(ctrls[10])
+    SDR = parseInt(ctrls[11])
+} else { // No controls found, make new
+    var aaa = Object.keys(ctrl)
+    aaa.push('160','30','15')
+    setCookie('controls', aaa.join('-=-'), 365)
+}
+
+var httpRequest = new XMLHttpRequest() // this method sucks but whatever
+var keys = Object.keys(imgs)
+httpRequest.open("GET", "rotationSystem.json", true)
+keys.map((k,idx) => {
+    var i = new Image()
+    i.onload=()=>{
+        imgs[k] = i
+        if(idx+1==keys.length) httpRequest.send() // Load images first, then load game after
+    }
+    i.src = imgs[k]
+})
+
+httpRequest.addEventListener("readystatechange", function() {
+    if (this.readyState !== this.DONE) return
+    const json = JSON.parse(this.response)
+    pieces = json.pieces
+    kicks = json.kicks
+    document.addEventListener("keydown", function(e) {
+        //print(e.key)
+        if(e.repeat) return;
+        const input = ctrl[e.key]
+        if(input) {
+            switch(input) {
+                case 'L':
+                    Ldn = true
+                    dasID++
+                    das('L',dasID)
+                    break;
+                case 'R':
+                    Rdn = true
+                    dasID++
+                    das('R',dasID)
+                    break;
+                case 'SD':
+                    softDrop()
+                    break;
+                case 'HD':
+                    hardDrop()
+                    break;
+                case 'HL':
+                    hold()
+                    break;
+                case 'CW':
+                    rotate('CW')
+                    break;
+                case 'CCW':
+                    rotate('CCW')
+                    break;
+                case 'R180':
+                    rotate('R180')
+                    break;
+                case 'RE': // Restart
+                    board = []
+                    for (let i = 0; i < 40; i++) {board.push([a,a,a,a,a,a,a,a,a,a])}
+                    queue = []
+                    rot = 0
+                    piece = ""
+                    holdP = ""
+                    held = false
+                    xPOS = spawn[0]
+                    yPOS = spawn[1]
+                    xGHO = spawn[0]
+                    yGHO = spawn[1]
+                    newPiece()
+                    break;
+            }
+        }
+    })
+    document.addEventListener("keyup", function(e) {
+        const input = ctrl[e.key]
+        if(input) {
+            switch(input) {
+                case 'SD':
+                    clearInterval(sdINT)
+                    sdINT = null
+                    break;
+                case 'L':
+                    Ldn = false
+                    clearInterval(dasINT)
+                    dasID++
+                    dasINT = null
+                    if(Rdn && !charging) {das('R',dasID)} else {setTimeout(() => { if(Rdn && !charging) {das('R',dasID)} }, DAS)}
+                    break;
+                case 'R':
+                    Rdn = false
+                    clearInterval(dasINT)
+                    dasID++
+                    dasINT = null
+                    if(Ldn && !charging) {das('L',dasID)} else {setTimeout(() => { if(Ldn && !charging) {das('L',dasID)} }, DAS)}
+                    break;
+            }
+        }
+    })
+
+    newPiece()
+    setInterval(() => {
+        move('SD')
+    }, 700)
+
+    function playSnd(sfx) {
+        new Audio(`sfx/${sfx}.wav`).play()
+    }
+
+    function move(dir) {
+        switch(dir) {
+            case 'L':
+                if(canMove(pieces[piece][rot],xPOS-1,yPOS)) {xPOS--; updateGhost(); playSnd('Move')}
+                break;
+            case 'R':
+                if(canMove(pieces[piece][rot],xPOS+1,yPOS)) {xPOS++; updateGhost(); playSnd('Move')}
+                break;
+            case 'SD':
+                if(canMove(pieces[piece][rot],xPOS,yPOS+1)) {yPOS++}
+                break;
+        }
+        clearActive()
+        setShape()
+    }
+
+    function rotate(dir) {
+        var newRot = (rot+rotDir[dir])%4
+
+        for(const kick of kicks[`${piece=='I'?'I':'N'}${rot}-${newRot}`]) {
+            if(canMove(pieces[piece][newRot], xPOS+kick[0], yPOS-kick[1])) { // Y is inverted lol
+                xPOS+=kick[0]
+                yPOS-=kick[1]
+                rot=newRot
+                playSnd('Rotate')
+                break
+            }
+        }
+
+        clearActive()
+        updateGhost()
+        setShape()
+    }
+
+    function das(dir,id) {
+        move(dir)
+        charging = true
+        setTimeout(()=>{
+            charging = false
+            dasINT = setInterval((a) => {
+                if(dasID==id) {
+                    move(dir)
+                }
+            }, ARR)
+        }, DAS)
+    }
+
+    function softDrop() {
+        if(sdINT==null) {
+            sdINT = setInterval((a) => {
+                move('SD')
+            }, SDR)
+        }
+    }
+
+    function hardDrop() {
+        yPOS = yGHO
+        held = false
+        playSnd('HardDrop')
+        setShape(true)
+        clearActive()
+        checkLines()
+        newPiece()
+    }
+
+    function hold() {
+        if(held) return;
+        rot = 0
+        xPOS = spawn[0]
+        yPOS = spawn[1]
+        held = true
+        if(holdP) {
+            holdP = [piece, piece = holdP][0]
+        } else {
+            holdP = piece
+            piece = queue.shift()
+        }
+        playSnd('Hold')
+        clearActive()
+        updateGhost()
+        setShape()
+        updateQueue()
+    }
+
+    function newPiece() {
+        while (queue.length<10) {
+            var shuf = names.shuffle()
+            shuf.map(p => queue.push(p))
+        }
+        xPOS = spawn[0]
+        yPOS = spawn[1]
+        rot = 0
+        piece = queue.shift()
+        updateQueue()
+        updateGhost()
+        setShape()
+    }
+
+    function updateQueue() {
+        ctxN.clearRect(0,0,90,360)
+        ctxH.clearRect(0,0,90,60)
+        for (let i = 0; i < 6; i++) {
+            ctxN.drawImage(imgs[queue[i]],0,i*60)
+        }
+        if(holdP) ctxH.drawImage(imgs[holdP],0,0)
+    }
+
+    function updateGhost() { // updateGhost() must ALWAYS be before setShape()
+        xGHO = xPOS
+        yGHO = yPOS
+        while (canMove(pieces[piece][rot],xGHO,yGHO+1)) {
+            yGHO++
+        }
+    }
+
+    function setShape(hd) {
+        var p = pieces[piece][rot]
+        p.map((r,i) => {
+            r.map((c,ii) => {
+                var rowG = board[i+yGHO]
+                if(c==1 && rowG && rowG[ii+xGHO]) rowG[ii+xGHO] = {t:3,c:piece}
+                var rowP = board[i+yPOS]
+                if(c==1 && rowP && rowP[ii+xPOS]) rowP[ii+xPOS] = {t:hd?1:2,c:piece}
+            })
+        })
+        render()
+    }
+
+    function canMove(p,x,y) {
+        var free = 0
+        for (let row = 0; row < 4; row++) {
+            for (let cell = 0; cell < 4; cell++) {
+                if(p[row][cell] == 1) {
+                    if(board[y+row] && board[y+row][x+cell] && board[y+row][x+cell].t != 1) {
+                        free++
+                    }
+                }
+            }
+        }
+        return free>=4
+    }
+
+    function notify(text) {
+        const inANIM  = "animate__animated animate__bounceIn"
+        const outANIM = "animate__animated animate__fadeOutDown"
+        notf.removeClass(inANIM); notf.removeClass(outANIM)
+        notf.html(text)
+        notf.addClass(inANIM)
+        setTimeout(() => {
+            notf.removeClass(inANIM)
+            notf.addClass(outANIM)
+        },1000)
+    }
+
+    function checkLines() {
+        board = board.filter(r => !r.map(c => {return c.t==1}).every(v=>v))
+        var l = board.length
+        var cleared = 0
+        for (let i = 0; i < 40-l; i++) {
+            cleared++
+            board.unshift([a,a,a,a,a,a,a,a,a,a])
+        }
+        switch (cleared) {
+            case 1:
+                notify('SINGLE')
+                break;
+            case 2:
+                notify('DOUBLE')
+                break;
+            case 3:
+                notify('TRIPLE')
+                break;
+            case 4:
+                notify('TETRIS')
+                playSnd('ClearTetra')
+                break;
+        }
+        if(board[39].filter(c => c.t==0).length==10) {notify('PERFECT\nCLEAR!'); playSnd('PerfectClear')}
+    }
+
+    function clearActive() {
+        board.map((r,i) => {
+            r.map((c,ii) => {
+                if(c.t==2 || c.t==3 && board[i][ii]) {board[i][ii].t=0; board[i][ii].c=''}
+            })
+        })
+    }
+
+    function drawCell(x,y,piece,type) {
+        if(type==3) { // Ghost
+            ctx.strokeStyle = '#CCC'
+            ctx.strokeRect((x-1)*20+1,y*20+1,18,18)
+        } else if(type!==0) { // Current and Heap
+            ctx.fillStyle = color[piece]
+            ctx.fillRect((x-1)*20+1,y*20+1,18,18)
+        }
+    }
+
+    function render() {
+        ctx.drawImage(imgs.grid,0,0,200,400)
+        board.map((y,i) => {
+            y.map((x,ii) => {
+                if(x.t!==0) drawCell(ii+1,i-20,x.c,x.t)
+            })
+        })
+    }
+})
+</script>

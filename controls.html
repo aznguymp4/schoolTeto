@@ -1,0 +1,125 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<style>
+    @font-face { font-family: Mikado; src: url('MikadoMedium.ttf'); } 
+    body {
+        text-align: center;
+        font-family: Mikado;
+    }
+    kbd {
+        background-color: #ddd;
+        border-radius: 3px;
+        border: 1px solid #ccc;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
+        color: #333;
+        display: inline-block;
+        font-size: 18px;
+        line-height: 1;
+        padding: 2px 4px;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+    a {
+        transition: background-color .3s;
+        background-color: #222;
+        border-radius: 10px;
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    a:hover {
+        background-color: rgb(37, 83, 153);
+        cursor: pointer;
+    }
+    .input{
+        text-align: center;
+    }
+    input{
+        text-align: center;
+    }
+</style>
+
+<body style="background-color:#333; color: #eee;">
+    <div style="font-size:30px; top: 50%; left: 50%; position: fixed; transform: translate(-50%, -50%);">
+        <table style="font-size:24px">
+            <th>Action</th><th>Key</th>
+            </tr>
+            <td>Move Left</td><td class="input"><kbd id="1">ArrowLeft</kbd></td>
+            </tr>
+            <td>Move Right</td><td class="input"><kbd id="2">ArrowRight</kbd></td>
+            </tr>
+            <td>Soft Drop</td><td class="input"><kbd id="3">ArrowDown</kbd></td>
+            </tr>
+            <td>Hard Drop</td><td class="input"><kbd id="4">Space</kbd></td>
+            </tr>
+            <td>Swap Hold</td><td class="input"><kbd id="5">Shift</kbd></td>
+            </tr>
+            <td>Rotate Clockwise</td><td class="input"><kbd id="6">X</kbd></td>
+            </tr>
+            <td>Rotate Counterclockwise</td><td class="input"><kbd id="7">Z</kbd></td>
+            </tr>
+            <td>Rotate 180°</td><td class="input"><kbd id="8">C</kbd></td>
+            </tr>
+            <td>Restart</td><td class="input"><kbd id="9">R</kbd></td>
+            </tr>
+            <td>[DAS] Delayed Auto Shift</td><td class="numinput"><input type="number" id="das" max=750 value=160></td>
+            </tr>
+            <td>[ARR] Auto Repeat Rate</td><td class="numinput"><input type="number" id="arr" max=500 value=30></td>
+            </tr>
+            <td>[SDR] Soft Drop Rate</td><td class="numinput"><input type="number" id="sdr" max=250 value=15></td>
+            </tr>
+        </table>
+        <br>
+        <a onclick="window.close()">Save & Close</a>
+    </div>
+</body>
+
+<script>
+function setCookie(e,t,n){const o=new Date;o.setTime(o.getTime()+24*n*60*60*1e3);let i="expires="+o.toUTCString();document.cookie=e+"="+t+";"+i+";path=/"}function getCookie(e){let t=e+"=",n=decodeURIComponent(document.cookie).split(";");for(let e=0;e<n.length;e++){let o=n[e];for(;" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}
+const print = console.log
+var ctrlDat = ['ArrowLeft','ArrowRight','ArrowDown',' ','Shift','x','z','c','r','160','30','15']
+var cookie = getCookie('controls')
+if(cookie) {
+    var ctrls = cookie.split('-=-')
+    for (let i = 0; i < 9; i++) {
+        var c = ctrls[i]
+        ctrlDat[i] = c
+        $(`#${i+1}`).html((c.length==1?c.toUpperCase():c).replace(/ /g,'Space'))
+    }
+    ['das','arr','sdr'].map((id,idx) => {
+        var ipt = document.getElementById(id)
+        ipt.value = parseInt(ctrls[idx+9])
+    })
+}
+
+function saveToCookie() {
+    setCookie('controls', ctrlDat.join('-=-').replace(/;/g,'SemiColon'), 365)
+}
+
+for (let i = 1; i <= 9; i++) {
+    document.getElementById(i).onclick = function() {
+        const b = document.getElementById(i)
+        if(b.innerHTML=='Press a key...') return;
+        b.innerHTML = 'Press a key...'
+
+        document.addEventListener('keydown', respond)
+        function respond(e) {
+            var k = e.key
+            ctrlDat[i-1] = k
+            k = k.replace(/ /g,'Space').replace(/;/g,'SemiColon')
+            b.innerHTML = k.length==1?k.toUpperCase():k
+            saveToCookie()
+            document.removeEventListener('keydown', respond)
+        }
+    }
+}
+['das','arr','sdr'].map((i,idx) => {
+    var ipt = document.getElementById(i)
+    ipt.oninput = function(e) {
+        var val = ipt.value?ipt.value:'0'
+        ctrlDat[idx+9] = val
+        saveToCookie()
+    }
+})
+
+</script>
