@@ -1,4 +1,5 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="rotationSystem.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <style>
     @font-face { font-family: Muro; src: url('Muroslant.otf'); } 
@@ -73,14 +74,14 @@ const color = {
     T: "#C3F"
 }
 var imgs = {
-    grid: 'grid.png',
-    Z: '/pieceSprite/z.png',
-    L: '/pieceSprite/l.png',
-    O: '/pieceSprite/o.png',
-    S: '/pieceSprite/s.png',
-    I: '/pieceSprite/i.png',
-    J: '/pieceSprite/j.png',
-    T: '/pieceSprite/t.png'
+    grid: './grid.png',
+    Z: './pieceSprite/z.png',
+    L: './pieceSprite/l.png',
+    O: './pieceSprite/o.png',
+    S: './pieceSprite/s.png',
+    I: './pieceSprite/i.png',
+    J: './pieceSprite/j.png',
+    T: './pieceSprite/t.png'
 }
 const notf = $('#notif')
 const names = ["Z","L","O","S","I","J","T"]
@@ -134,23 +135,19 @@ if(cookie) { // Load saved controls from cookies
     setCookie('controls', aaa.join('-=-'), 365)
 }
 
-var httpRequest = new XMLHttpRequest() // this method sucks but whatever
 var keys = Object.keys(imgs)
-httpRequest.open("GET", "rotationSystem.json", true)
 keys.map((k,idx) => {
     var i = new Image()
     i.onload=()=>{
         imgs[k] = i
-        if(idx+1==keys.length) httpRequest.send() // Load images first, then load game after
+        if(idx+1==keys.length) callback() // Load images first, then load game after
     }
     i.src = imgs[k]
 })
 
-httpRequest.addEventListener("readystatechange", function() {
-    if (this.readyState !== this.DONE) return
-    const json = JSON.parse(this.response)
-    pieces = json.pieces
-    kicks = json.kicks
+function callback() {
+    pieces = SRSX.pieces
+    kicks = SRSX.kicks
     document.addEventListener("keydown", function(e) {
         //print(e.key)
         if(e.repeat) return;
@@ -443,5 +440,5 @@ httpRequest.addEventListener("readystatechange", function() {
             })
         })
     }
-})
+}
 </script>
