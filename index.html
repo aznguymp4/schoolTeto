@@ -58,12 +58,12 @@ var ctrl = {
     "ArrowLeft": "L",
     "ArrowRight": "R",
     "ArrowDown": "SD",
-    " ": "HD",
-    "Shift": "HL",
-    "z": "CW",
-    "x": "CCW",
-    "c": "R180",
-    "r": "RE"
+    "Space": "HD",
+    "ShiftLeft": "HL",
+    "KeyZ": "CW",
+    "KeyX": "CCW",
+    "KeyC": "R180",
+    "KeyR": "RE"
 }
 const color = {
     Z: "#F00",
@@ -119,9 +119,10 @@ var ctxN = cN.getContext("2d")
 /* ctxN.fillStyle = '#333'
 ctxH.fillStyle = '#333' */
 
-var cookie = getCookie('controls')//'a-=-d-=-s-=-w-=-[-=-SemiColon-=-l-=- -=-p'
-if(cookie) { // Load saved controls from cookies
-    var ctrls = cookie.replace(/SemiColon/g,';').split('-=-')
+var cookie = getCookie('controls')
+var ver = getCookie('version')
+if(cookie && ver=='2021-08-29a') { // Load saved controls from cookies
+    var ctrls = cookie.split('-=-')
     var codes = Object.values(ctrl)
     ctrl = {}
     for (let i = 0; i < 9; i++) {
@@ -153,7 +154,7 @@ function callback() {
     kicks = SRSX.kicks
     document.addEventListener("keydown", function(e) {
         if(e.repeat) return;
-        const input = ctrl[e.key]
+        const input = ctrl[e.code]
         if(input) {
             switch(input) {
                 case 'L':
@@ -202,7 +203,7 @@ function callback() {
         }
     })
     document.addEventListener("keyup", function(e) {
-        const input = ctrl[e.key]
+        const input = ctrl[e.code]
         if(input) {
             switch(input) {
                 case 'SD':
@@ -214,14 +215,14 @@ function callback() {
                     clearInterval(dasINT)
                     dasID++
                     dasINT = null
-                    if(Rdn && !charging) {das('R',dasID)} else {setTimeout(() => { if(Rdn && !charging) {das('R',dasID)} }, DAS)}
+                    if(Rdn && !charging) {das('R',dasID)}
                     break;
                 case 'R':
                     Rdn = false
                     clearInterval(dasINT)
                     dasID++
                     dasINT = null
-                    if(Ldn && !charging) {das('L',dasID)} else {setTimeout(() => { if(Ldn && !charging) {das('L',dasID)} }, DAS)}
+                    if(Ldn && !charging) {das('L',dasID)}
                     break;
             }
         }

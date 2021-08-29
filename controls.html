@@ -84,16 +84,19 @@ if(cookie) {
     for (let i = 0; i < 9; i++) {
         var c = ctrls[i]
         ctrlDat[i] = c
-        $(`#${i+1}`).html((c.length==1?c.toUpperCase():c).replace(/ /g,'Space'))
+        $(`#${i+1}`).html((c.length==1?c.toUpperCase():c))
     }
     ['das','arr','sdr'].map((id,idx) => {
         var ipt = document.getElementById(id)
-        ipt.value = parseInt(ctrls[idx+9])
+        var val = parseInt(ctrls[idx+9])
+        ipt.value = val
+        ctrlDat[idx+9] = val
     })
 }
 
 function saveToCookie() {
-    setCookie('controls', ctrlDat.join('-=-').replace(/;/g,'SemiColon'), 365)
+    setCookie('controls', ctrlDat.join('-=-'), 365)
+    setCookie('version', '2021-08-29a')
 }
 
 for (let i = 1; i <= 9; i++) {
@@ -104,9 +107,8 @@ for (let i = 1; i <= 9; i++) {
 
         document.addEventListener('keydown', respond)
         function respond(e) {
-            var k = e.key
+            var k = e.code
             ctrlDat[i-1] = k
-            k = k.replace(/ /g,'Space').replace(/;/g,'SemiColon')
             b.innerHTML = k.length==1?k.toUpperCase():k
             saveToCookie()
             document.removeEventListener('keydown', respond)
