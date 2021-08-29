@@ -141,7 +141,9 @@ keys.map((k,idx) => {
     var i = new Image()
     i.onload=()=>{
         imgs[k] = i
-        if(idx+1==keys.length) callback() // Load images first, then load game after
+        if(idx+1==keys.length) setTimeout(() => {
+            callback()
+        }, 250) // Load images first, then load game after
     }
     i.src = imgs[k]
 })
