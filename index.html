@@ -43,8 +43,9 @@ const print = console.log
 
 function ctrlsPopup() {
     var p = window.open('controls.html','popup','width=1200,height=800')
+    var reloading = false
     setInterval(() => {// event onbeforeunload wont work and idk why so i gotta use this
-        if(p.closed) location.reload()
+        if(p.closed && !reloading) {location.reload(); reloading = true}
     }, 100);
 }
 
