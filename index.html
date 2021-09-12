@@ -85,20 +85,25 @@ var imgs = {
     J: './pieceSprite/j.png',
     T: './pieceSprite/t.png'
 }
+const cellSize = 20 // pixels
+const boardSize = [10,40]
+const hiddenRows = 20 // starts from the top
 const notf = $('#notif')
-const names = ["Z","L","O","S","I","J","T"]
-const spawn = [3,18]
+const names = 'ZLOSIJT'.split('')
+const spawn = [~~boardSize[0]/2-2,boardSize[1]-hiddenRows-2]
 const a = {t:0,c:""} // t:0 = nothing   t:1 = heap mino   t:2 = current mino   t:3 = ghost mino
+const aRow = function() { return '.'.repeat(boardSize[0]).split('').map(()=>{return a}) }
 const rotDir = {
     CW: 1,
     CCW: 3,
     R180: 2
 }
+var sfxCache = {}
 var DAS = 160
 var ARR = 30
 var SDR = 15
 var charging = false
-var board = []; for (let i = 0; i < 40; i++) {board.push([a,a,a,a,a,a,a,a,a,a])}
+var board = []
 var queue = []
 var piece = ""
 var holdP = ""
@@ -114,8 +119,11 @@ var yGHO = spawn[1]
 var ctx  = document.getElementById("b").getContext("2d")
 var ctxH = document.getElementById("h").getContext("2d")
 var ctxN = document.getElementById("n").getContext("2d")
-/* ctxN.fillStyle = '#333'
-ctxH.fillStyle = '#333' */
+for (let i = 0; i < boardSize[1]; i++) {
+    board.push(aRow())
+}
+document.getElementById("b").height = (boardSize[1]*cellSize)-(hiddenRows*cellSize)
+document.getElementById("b").width  = boardSize[0]*cellSize
 
 var cookie = getCookie('controls')
 var ver = getCookie('version')
@@ -185,7 +193,7 @@ function callback() {
                     break;
                 case 'RE': // Restart
                     board = []
-                    for (let i = 0; i < 40; i++) {board.push([a,a,a,a,a,a,a,a,a,a])}
+                    for (let i = 0; i < boardSize[1]; i++) {board.push(aRow())}
                     queue = []
                     rot = 0
                     piece = ""
@@ -231,8 +239,11 @@ function callback() {
         move('SD')
     }, 700)
 
-    function playSnd(sfx) {
-        new Audio(`sfx/${sfx}.wav`).play()
+    function playSnd(sfx,overlap) {
+        if(sfxCache[sfx] && !overlap) return sfxCache[sfx].play()
+        var s = new Audio(`sfx/${sfx}.wav`)
+        sfxCache[sfx] = s
+        s.play()
     }
 
     function move(dir) {
@@ -259,7 +270,7 @@ function callback() {
                 xPOS+=kick[0]
                 yPOS-=kick[1]
                 rot=newRot
-                playSnd('Rotate')
+                playSnd('Rotate',true)
                 break
             }
         }
@@ -293,7 +304,7 @@ function callback() {
     function hardDrop() {
         yPOS = yGHO
         held = false
-        playSnd('HardDrop')
+        playSnd('HardDrop',true)
         setShape(true)
         clearActive()
         checkLines()
@@ -393,9 +404,9 @@ function callback() {
         board = board.filter(r => !r.map(c => {return c.t==1}).every(v=>v))
         var l = board.length
         var cleared = 0
-        for (let i = 0; i < 40-l; i++) {
+        for (let i = 0; i < boardSize[1]-l; i++) {
             cleared++
-            board.unshift([a,a,a,a,a,a,a,a,a,a])
+            board.unshift(aRow())
         }
         switch (cleared) {
             case 1:
@@ -409,10 +420,10 @@ function callback() {
                 break;
             case 4:
                 notify('TETRIS')
-                playSnd('ClearTetra')
+                playSnd('ClearTetra',true)
                 break;
         }
-        if(board[39].filter(c => c.t==0).length==10) {notify('PERFECT\nCLEAR!'); playSnd('PerfectClear')}
+        if(board[board.length-1].filter(c => c.t==0).length==boardSize[0]) {notify('PERFECT\nCLEAR!'); playSnd('PerfectClear')}
     }
 
     function clearActive() {
@@ -426,18 +437,24 @@ function callback() {
     function drawCell(x,y,piece,type) {
         if(type==3) { // Ghost
             ctx.strokeStyle = '#CCC'
-            ctx.strokeRect((x-1)*20+1,y*20+1,18,18)
+            ctx.strokeRect((x-1)*cellSize+1,y*cellSize+1,cellSize-2,cellSize-2)
         } else if(type!==0) { // Current and Heap
             ctx.fillStyle = color[piece]
-            ctx.fillRect((x-1)*20+1,y*20+1,18,18)
+            ctx.fillRect((x-1)*cellSize+1,y*cellSize+1,cellSize-2,cellSize-2)
         }
     }
 
     function render() {
-        ctx.drawImage(imgs.grid,0,0,200,400)
+        //ctx.drawImage(imgs.grid,0,0,boardSize[0]*cellSize,boardSize[1]*cellSize)
+        
+        ctx.clearRect(0,0,boardSize[0]*cellSize,boardSize[1]*cellSize)
         board.map((y,i) => {
             y.map((x,ii) => {
-                if(x.t!==0) drawCell(ii+1,i-20,x.c,x.t)
+                if(x.t==0) {
+                    ctx.drawImage(imgs.grid,ii*cellSize,i*cellSize,cellSize,cellSize)
+                } else {
+                    drawCell(ii+1,i-hiddenRows,x.c,x.t)
+                }
             })
         })
     }
