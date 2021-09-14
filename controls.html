@@ -42,7 +42,7 @@
 <body style="background-color:#333; color: #eee;">
     <div style="font-size:30px; top: 50%; left: 50%; position: fixed; transform: translate(-50%, -50%);">
         <table style="font-size:24px">
-            <th>Action</th><th>Key</th>
+            <th>Controls</th><th>Key</th>
             </tr>
             <td>Move Left</td><td class="input"><kbd id="1">ArrowLeft</kbd></td>
             </tr>
@@ -68,25 +68,36 @@
             </tr>
             <td>[SDR] Soft Drop Rate</td><td class="numinput"><input type="number" id="sdr" max=250 value=15></td>
             </tr>
+            <th>Other Settings</th><th>Value</th>
+            </tr>
+            <td>Board Width - X</td><td class="numinput"><input type="number" id="boardX" value=10></td>
+            </tr>
+            <td>Board Height - Y</td><td class="numinput"><input type="number" id="boardY" value=40></td>
+            </tr>
+            <td>Hidden Rows</td><td class="numinput"><input type="number" id="hidden" min=0 value=20></td>
+            </tr>
+            <td>Cell Size - Pixels</td><td class="numinput"><input type="number" id="cellpx" min=3 value=20></td>
+            </tr>
         </table>
         <br>
         <a onclick="window.close()">Save & Close</a>
+        <a onclick="setCookie('version','',0); setCookie('controls','',0); location.reload()">Reset to Defaults</a>
     </div>
 </body>
 
 <script>
 function setCookie(e,t,n){const o=new Date;o.setTime(o.getTime()+24*n*60*60*1e3);let i="expires="+o.toUTCString();document.cookie=e+"="+t+";"+i+";path=/"}function getCookie(e){let t=e+"=",n=decodeURIComponent(document.cookie).split(";");for(let e=0;e<n.length;e++){let o=n[e];for(;" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}
 const print = console.log
-var ctrlDat = ['ArrowLeft','ArrowRight','ArrowDown',' ','Shift','x','z','c','r','160','30','15']
+var ctrlDat = ['ArrowLeft','ArrowRight','ArrowDown',' ','Shift','x','z','c','r','160','30','15','10','40','20','20']
 var cookie = getCookie('controls')
-if(cookie) {
+if(cookie && getCookie('version')=='2021-09-14a') {
     var ctrls = cookie.split('-=-')
     for (let i = 0; i < 9; i++) {
         var c = ctrls[i]
         ctrlDat[i] = c
         $(`#${i+1}`).html((c.length==1?c.toUpperCase():c))
     }
-    ['das','arr','sdr'].map((id,idx) => {
+    ['das','arr','sdr','boardX','boardY','hidden','cellpx'].map((id,idx) => {
         var ipt = document.getElementById(id)
         var val = parseInt(ctrls[idx+9])
         ipt.value = val
@@ -96,7 +107,7 @@ if(cookie) {
 
 function saveToCookie() {
     setCookie('controls', ctrlDat.join('-=-'), 365)
-    setCookie('version', '2021-08-29a')
+    setCookie('version', '2021-09-14a')
 }
 
 for (let i = 1; i <= 9; i++) {
@@ -115,7 +126,7 @@ for (let i = 1; i <= 9; i++) {
         }
     }
 }
-['das','arr','sdr'].map((i,idx) => {
+['das','arr','sdr','boardX','boardY','hidden','cellpx'].map((i,idx) => {
     var ipt = document.getElementById(i)
     ipt.oninput = function(e) {
         var val = ipt.value?ipt.value:'0'

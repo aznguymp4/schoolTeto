@@ -4,7 +4,6 @@
 <style>
     @font-face { font-family: Muro; src: url('Muroslant.otf'); } 
     .queue{
-        float: left;
         text-align: center;
         font-family: Muro;
         font-size: 28px;
@@ -18,14 +17,16 @@
     <title>SchoolTeto</title>
 </head>
 <body style="background-color:#222; color: #FFF;">
-    <div style="top: 50%; left: 50%; position: fixed; transform: translate(-50%, -50%);">
+    <div style="top: 50%; left: 50%; position: fixed; transform: translate(-50%, -50%); display:flex;">
         <div class="queue">
             HOLD
             <hr>
             <canvas id="h" width="90" height="60"></canvas>
             <div id="notif" style="width: 90px; text-align: center;"></div>
         </div>
-        <canvas id="b" width="200" height="400" style="float: left; padding: 18px;"></canvas>
+        <div>
+            <canvas id="b" width="200" height="400" style="padding: 18px;"></canvas>
+        </div>
         <div class="queue">
             NEXT
             <hr>
@@ -85,49 +86,16 @@ var imgs = {
     J: './pieceSprite/j.png',
     T: './pieceSprite/t.png'
 }
-const cellSize = 20 // pixels
-const boardSize = [10,40]
-const hiddenRows = 20 // starts from the top
-const notf = $('#notif')
-const names = 'ZLOSIJT'.split('')
-const spawn = [~~boardSize[0]/2-2,boardSize[1]-hiddenRows-2]
-const a = {t:0,c:""} // t:0 = nothing   t:1 = heap mino   t:2 = current mino   t:3 = ghost mino
-const aRow = function() { return '.'.repeat(boardSize[0]).split('').map(()=>{return a}) }
-const rotDir = {
-    CW: 1,
-    CCW: 3,
-    R180: 2
-}
-var sfxCache = {}
+var cellSize = 20 // pixels
+var boardSize = [10,40]
+var hiddenRows = 20 // starts from the top
 var DAS = 160
 var ARR = 30
 var SDR = 15
-var charging = false
-var board = []
-var queue = []
-var piece = ""
-var holdP = ""
-var held = false
-var Ldn = Rdn = false
-var rot = 0
-var dasID = 0
-var sdINT = dasINT = null
-var xPOS = spawn[0]
-var yPOS = spawn[1]
-var xGHO = spawn[0]
-var yGHO = spawn[1]
-var ctx  = document.getElementById("b").getContext("2d")
-var ctxH = document.getElementById("h").getContext("2d")
-var ctxN = document.getElementById("n").getContext("2d")
-for (let i = 0; i < boardSize[1]; i++) {
-    board.push(aRow())
-}
-document.getElementById("b").height = (boardSize[1]*cellSize)-(hiddenRows*cellSize)
-document.getElementById("b").width  = boardSize[0]*cellSize
 
 var cookie = getCookie('controls')
 var ver = getCookie('version')
-if(cookie && ver=='2021-08-29a') { // Load saved controls from cookies
+if(cookie && ver=='2021-09-14a') { // Load saved controls from cookies
     var ctrls = cookie.split('-=-')
     var codes = Object.values(ctrl)
     ctrl = {}
@@ -137,11 +105,48 @@ if(cookie && ver=='2021-08-29a') { // Load saved controls from cookies
     DAS = parseInt(ctrls[9])
     ARR = parseInt(ctrls[10])
     SDR = parseInt(ctrls[11])
+    boardSize = [parseInt(ctrls[12]), parseInt(ctrls[13])]
+    hiddenRows = parseInt(ctrls[14])
+    cellSize = parseInt(ctrls[15])
 } else { // No controls found, make new
     var aaa = Object.keys(ctrl)
-    aaa.push('160','30','15')
+    aaa.push('160','30','15','10','40','20','20')
     setCookie('controls', aaa.join('-=-'), 365)
 }
+
+const notf = $('#notif')
+const names = 'ZLOSIJT'.split('')
+const spawn = [Math.round(boardSize[0]/2)-2, boardSize[1]-hiddenRows-(boardSize[1]-hiddenRows-hiddenRows)-1]
+const a = {t:0,c:""} // t:0 = nothing   t:1 = heap mino   t:2 = current mino   t:3 = ghost mino
+const aRow = function() { return '.'.repeat(boardSize[0]).split('').map(()=>{return a}) }
+const rotDir = {
+    CW: 1,
+    CCW: 3,
+    R180: 2
+}
+var sfxCache = {}
+var charging = false
+var board = []
+var queue = []
+var piece = ""
+var holdP = ""
+var held = false
+var Ldn = Rdn = false
+var rot = 0
+var dasID = sdID = 0
+var sdINT = dasINT = null
+var xPOS = spawn[0]
+var yPOS = spawn[1]
+var xGHO = spawn[0]
+var yGHO = spawn[1]
+var ctx  = document.getElementById("b").getContext("2d")
+var ctxH = document.getElementById("h").getContext("2d")
+var ctxN = document.getElementById("n").getContext("2d")
+var gridCvs = document.createElement('canvas'); gridCvs.height = cellSize; gridCvs.width = cellSize; var gridCtx = gridCvs.getContext('2d'); gridCtx.fillStyle = '#2A2A2A'; gridCtx.fillRect(0,0,cellSize,cellSize); gridCtx.strokeStyle = '#3A3A3A'; gridCtx.strokeRect(0,0,cellSize,cellSize)
+var pattern = ctx.createPattern(gridCvs, 'repeat')
+for (let i = 0; i < boardSize[1]; i++) { board.push(aRow()) }
+document.getElementById("b").height = ((boardSize[1]-hiddenRows)*cellSize)
+document.getElementById("b").width  = boardSize[0]*cellSize
 
 var keys = Object.keys(imgs)
 keys.map((k,idx) => {
@@ -174,7 +179,8 @@ function callback() {
                     das('R',dasID)
                     break;
                 case 'SD':
-                    softDrop()
+                    sdID++
+                    softDrop(sdID)
                     break;
                 case 'HD':
                     hardDrop()
@@ -213,21 +219,16 @@ function callback() {
         if(input) {
             switch(input) {
                 case 'SD':
-                    clearInterval(sdINT)
-                    sdINT = null
+                    sdID++
                     break;
                 case 'L':
                     Ldn = false
-                    clearInterval(dasINT)
                     dasID++
-                    dasINT = null
                     if(Rdn && !charging) {das('R',dasID)}
                     break;
                 case 'R':
                     Rdn = false
-                    clearInterval(dasINT)
                     dasID++
-                    dasINT = null
                     if(Ldn && !charging) {das('L',dasID)}
                     break;
             }
@@ -285,19 +286,32 @@ function callback() {
         charging = true
         setTimeout(()=>{
             charging = false
-            dasINT = setInterval((a) => {
-                if(dasID==id) {
-                    move(dir)
+                for (let i = 0; i < (ARR==0?boardSize[0]:1); i++) {
+                    var looooop = setInterval(function() {
+                        if(dasID==id) {
+                            move(dir)
+                        } else {clearInterval(looooop)};
+                    }, ARR)
                 }
-            }, ARR)
         }, DAS)
     }
 
-    function softDrop() {
-        if(sdINT==null) {
-            sdINT = setInterval((a) => {
-                move('SD')
+    function softDrop(id) {
+        if(SDR) {
+            var loop = setInterval(function(a) {
+                if(sdID==id) {
+                    move('SD')
+                } else {clearInterval(loop)}
             }, SDR)
+        } else { // SDR is 0ms = instant SD
+            var loop = setInterval(() => {
+                if(sdID==id) {
+                    yPOS=yGHO
+                    clearActive()
+                    setShape()
+                } else {clearInterval(loop)}
+            }, 0)
+            
         }
     }
 
@@ -371,7 +385,7 @@ function callback() {
                 if(c==1 && rowP && rowP[ii+xPOS]) rowP[ii+xPOS] = {t:hd?1:2,c:piece}
             })
         })
-        render()
+        //render()
     }
 
     function canMove(p,x,y) {
@@ -423,7 +437,7 @@ function callback() {
                 playSnd('ClearTetra',true)
                 break;
         }
-        if(board[board.length-1].filter(c => c.t==0).length==boardSize[0]) {notify('PERFECT\nCLEAR!'); playSnd('PerfectClear')}
+        if(board[board.length-1].filter(c => c.t==0).length==boardSize[0]) {notify('PERFECT\nCLEAR!'); playSnd('PerfectClear',1)}
     }
 
     function clearActive() {
@@ -445,18 +459,21 @@ function callback() {
     }
 
     function render() {
-        //ctx.drawImage(imgs.grid,0,0,boardSize[0]*cellSize,boardSize[1]*cellSize)
-        
         ctx.clearRect(0,0,boardSize[0]*cellSize,boardSize[1]*cellSize)
+        ctx.fillStyle = pattern
+        ctx.fillRect(0,0,boardSize[0]*cellSize,boardSize[1]*cellSize)
+        
         board.map((y,i) => {
             y.map((x,ii) => {
-                if(x.t==0) {
-                    ctx.drawImage(imgs.grid,ii*cellSize,i*cellSize,cellSize,cellSize)
-                } else {
+                if(x.t!==0) {
                     drawCell(ii+1,i-hiddenRows,x.c,x.t)
                 }
             })
         })
     }
+
+    setInterval(() => {
+        render()
+    }, 0);
 }
 </script>
