@@ -224,12 +224,31 @@ function callback() {
                 case 'L':
                     Ldn = false
                     dasID++
-                    if(Rdn && !charging) {das('R',dasID)}
+                    if(Rdn) {
+                        if(charging) {
+                            var currentID = dasID+0
+                            setTimeout(() => {
+                                if(dasID == currentID) {
+                                    das('R',dasID)
+                                }
+                            }, DAS)
+                        } else {das('R',dasID)}
+                    }
                     break;
                 case 'R':
                     Rdn = false
                     dasID++
-                    if(Ldn && !charging) {das('L',dasID)}
+
+                    if(Ldn) {
+                        if(charging) {
+                            var currentID = dasID+0
+                            setTimeout(() => {
+                                if(dasID == currentID) {
+                                    das('L',dasID)
+                                }
+                            }, DAS)
+                        } else {das('L',dasID)}
+                    }
                     break;
             }
         }
