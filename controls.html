@@ -81,17 +81,18 @@
         </table>
         <br>
         <a onclick="window.close()">Save & Close</a>
-        <a onclick="setCookie('version','',0); setCookie('controls','',0); location.reload()">Reset to Defaults</a>
+        <a onclick="delete LS.version; delete LS.config; location.reload()">Reset to Defaults</a>
     </div>
 </body>
 
 <script>
-function setCookie(e,t,n){const o=new Date;o.setTime(o.getTime()+24*n*60*60*1e3);let i="expires="+o.toUTCString();document.cookie=e+"="+t+";"+i+";path=/"}function getCookie(e){let t=e+"=",n=decodeURIComponent(document.cookie).split(";");for(let e=0;e<n.length;e++){let o=n[e];for(;" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}
 const print = console.log
+const LS = localStorage
 var ctrlDat = ['ArrowLeft','ArrowRight','ArrowDown',' ','Shift','x','z','c','r','160','30','15','10','40','20','20']
-var cookie = getCookie('controls')
-if(cookie && getCookie('version')=='2021-09-14a') {
-    var ctrls = cookie.split('-=-')
+var ctrlsDat = LS.config
+
+if(ctrlsDat && LS.version=='2021-09-16a') {
+    var ctrls = JSON.parse(ctrlsDat)
     for (let i = 0; i < 9; i++) {
         var c = ctrls[i]
         ctrlDat[i] = c
@@ -105,9 +106,9 @@ if(cookie && getCookie('version')=='2021-09-14a') {
     })
 }
 
-function saveToCookie() {
-    setCookie('controls', ctrlDat.join('-=-'), 365)
-    setCookie('version', '2021-09-14a')
+function saveCtrls() {
+    LS.config = JSON.stringify(ctrlDat)
+    LS.version = '2021-09-16a'
 }
 
 for (let i = 1; i <= 9; i++) {
@@ -121,7 +122,7 @@ for (let i = 1; i <= 9; i++) {
             var k = e.code
             ctrlDat[i-1] = k
             b.innerHTML = k
-            saveToCookie()
+            saveCtrls()
             document.removeEventListener('keydown', respond)
         }
     }
@@ -131,7 +132,7 @@ for (let i = 1; i <= 9; i++) {
     ipt.oninput = function(e) {
         var val = ipt.value?ipt.value:'0'
         ctrlDat[idx+9] = val
-        saveToCookie()
+        saveCtrls()
     }
 })
 

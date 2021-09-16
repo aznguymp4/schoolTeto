@@ -39,8 +39,8 @@
     </div>
 </body>
 <script>
-function setCookie(e,t,n){const o=new Date;o.setTime(o.getTime()+24*n*60*60*1e3);let i="expires="+o.toUTCString();document.cookie=e+"="+t+";"+i+";path=/"}function getCookie(e){let t=e+"=",n=decodeURIComponent(document.cookie).split(";");for(let e=0;e<n.length;e++){let o=n[e];for(;" "==o.charAt(0);)o=o.substring(1);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return""}
 const print = console.log
+const LS = localStorage
 
 function ctrlsPopup() {
     var p = window.open('controls.html','popup','width=1200,height=800')
@@ -93,25 +93,22 @@ var DAS = 160
 var ARR = 30
 var SDR = 15
 
-var cookie = getCookie('controls')
-var ver = getCookie('version')
-if(cookie && ver=='2021-09-14a') { // Load saved controls from cookies
-    var ctrls = cookie.split('-=-')
+var ctrlsDat = LS.config
+if(ctrlsDat && LS.version=='2021-09-16a') { // Load saved config from LocalStorage
+    var ctrls = JSON.parse(ctrlsDat)
     var codes = Object.values(ctrl)
     ctrl = {}
-    for (let i = 0; i < 9; i++) {
-        ctrl[ctrls[i]] = codes[i]
-    }
+    for (let i = 0; i < 9; i++) { ctrl[ctrls[i]] = codes[i] }
     DAS = parseInt(ctrls[9])
     ARR = parseInt(ctrls[10])
     SDR = parseInt(ctrls[11])
     boardSize = [parseInt(ctrls[12]), parseInt(ctrls[13])]
     hiddenRows = parseInt(ctrls[14])
     cellSize = parseInt(ctrls[15])
-} else { // No controls found, make new
-    var aaa = Object.keys(ctrl)
-    aaa.push('160','30','15','10','40','20','20')
-    setCookie('controls', aaa.join('-=-'), 365)
+} else { // No config found or outdated version, make new
+    var idk = Object.keys(ctrl)
+    idk.push('160','30','15','10','40','20','20')
+    LS.config = JSON.stringify(idk)
 }
 
 const notf = $('#notif')
