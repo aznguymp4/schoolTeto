@@ -5,7 +5,7 @@
 You can play it just like any guideline game and customize your keybinds and tunings.
 
 Controls settings are saved via browser cookies.
-### [Play SchoolTeto!](https://aznguy.com/schoolTeto/)
+### [▶ Play SchoolTeto! ◀](https://aznguy.com/schoolTeto/)
 # FAQ
 
 ## Where is the T-Spin detection?
