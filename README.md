@@ -4,7 +4,7 @@
 
 You can play it just like any guideline game and customize your keybinds and tunings.
 
-Controls settings are saved via browser cookies.
+Controls setting data is saved via browser application local storage.
 ### [▶ Play SchoolTeto! ◀](https://aznguy.com/schoolTeto/)
 # FAQ
 
