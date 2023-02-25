@@ -1,6 +1,6 @@
 
 # schoolTeto!
-**schoolTeto is some random HTML Tetris clone I made for a school project.**
+**schoolTeto is some random __unfinished__ HTML Tetris clone I made for a school project.**
 
 You can play it just like any guideline game and customize your keybinds and tunings.
 
